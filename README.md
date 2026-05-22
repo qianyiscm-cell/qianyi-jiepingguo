@@ -1,1 +1,250 @@
-哈哈哈哈哈哈哈啊哈
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>接苹果小游戏</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #a8edea, #fed6e3);
+      font-family: Arial, "Microsoft YaHei", sans-serif;
+    }
+
+    .game-container {
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .info {
+      margin-bottom: 10px;
+      font-size: 18px;
+      color: #333;
+    }
+
+    canvas {
+      background: #fffbea;
+      border: 4px solid #333;
+      border-radius: 12px;
+      display: block;
+    }
+
+    button {
+      margin-top: 12px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #ff7675;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #e55050;
+    }
+
+    .tip {
+      margin-top: 8px;
+      color: #555;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>🍎 接苹果小游戏</h1>
+    <div class="info">
+      分数：<span id="score">0</span>
+      &nbsp;|&nbsp;
+      生命：<span id="life">3</span>
+    </div>
+
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
+
+    <button onclick="restartGame()">重新开始</button>
+    <div class="tip">使用键盘 ← / → 控制篮子移动</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const scoreEl = document.getElementById("score");
+    const lifeEl = document.getElementById("life");
+
+    let score = 0;
+    let life = 3;
+    let gameOver = false;
+
+    const basket = {
+      x: 160,
+      y: 440,
+      width: 80,
+      height: 25,
+      speed: 7
+    };
+
+    const apple = {
+      x: Math.random() * 370,
+      y: 0,
+      size: 24,
+      speed: 3
+    };
+
+    const keys = {
+      left: false,
+      right: false
+    };
+
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "ArrowLeft") {
+        keys.left = true;
+      }
+      if (e.key === "ArrowRight") {
+        keys.right = true;
+      }
+    });
+
+    document.addEventListener("keyup", function(e) {
+      if (e.key === "ArrowLeft") {
+        keys.left = false;
+      }
+      if (e.key === "ArrowRight") {
+        keys.right = false;
+      }
+    });
+
+    function drawBasket() {
+      ctx.fillStyle = "#8B4513";
+      ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+
+      ctx.fillStyle = "#A0522D";
+      ctx.fillRect(basket.x + 8, basket.y + 5, basket.width - 16, basket.height - 5);
+    }
+
+    function drawApple() {
+      ctx.beginPath();
+      ctx.arc(
+        apple.x + apple.size / 2,
+        apple.y + apple.size / 2,
+        apple.size / 2,
+        0,
+        Math.PI * 2
+      );
+      ctx.fillStyle = "red";
+      ctx.fill();
+      ctx.closePath();
+
+      ctx.fillStyle = "green";
+      ctx.fillRect(apple.x + apple.size / 2 - 2, apple.y - 5, 4, 8);
+    }
+
+    function moveBasket() {
+      if (keys.left && basket.x > 0) {
+        basket.x -= basket.speed;
+      }
+
+      if (keys.right && basket.x + basket.width < canvas.width) {
+        basket.x += basket.speed;
+      }
+    }
+
+    function moveApple() {
+      apple.y += apple.speed;
+
+      const appleBottom = apple.y + apple.size;
+      const appleCenterX = apple.x + apple.size / 2;
+
+      const caught =
+        appleBottom >= basket.y &&
+        appleCenterX >= basket.x &&
+        appleCenterX <= basket.x + basket.width;
+
+      if (caught) {
+        score++;
+        scoreEl.textContent = score;
+        resetApple();
+
+        if (score % 5 === 0) {
+          apple.speed += 0.7;
+        }
+      }
+
+      if (apple.y > canvas.height) {
+        life--;
+        lifeEl.textContent = life;
+        resetApple();
+
+        if (life <= 0) {
+          gameOver = true;
+        }
+      }
+    }
+
+    function resetApple() {
+      apple.x = Math.random() * (canvas.width - apple.size);
+      apple.y = -apple.size;
+    }
+
+    function drawGameOver() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "white";
+      ctx.font = "36px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("游戏结束", canvas.width / 2, canvas.height / 2 - 20);
+
+      ctx.font = "22px Arial";
+      ctx.fillText("最终分数：" + score, canvas.width / 2, canvas.height / 2 + 25);
+    }
+
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      moveBasket();
+
+      if (!gameOver) {
+        moveApple();
+      }
+
+      drawApple();
+      drawBasket();
+
+      if (gameOver) {
+        drawGameOver();
+      }
+
+      requestAnimationFrame(update);
+    }
+
+    function restartGame() {
+      score = 0;
+      life = 3;
+      gameOver = false;
+
+      basket.x = 160;
+      apple.speed = 3;
+      resetApple();
+
+      scoreEl.textContent = score;
+      lifeEl.textContent = life;
+    }
+
+    update();
+  </script>
+</body>
+</html>
